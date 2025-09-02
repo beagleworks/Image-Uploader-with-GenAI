@@ -24,8 +24,19 @@ client = genai.Client(api_key=os.getenv('GOOGLE_AI_API_KEY'))
 def init_db():
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
+    
+    # Create table if it doesn't exist
     c.execute('''CREATE TABLE IF NOT EXISTS images
-                 (id INTEGER PRIMARY KEY, filename TEXT, comment TEXT, generated_image_filename TEXT)''')
+                 (id INTEGER PRIMARY KEY, filename TEXT, comment TEXT)''')
+    
+    # Check if generated_image_filename column exists, if not add it
+    c.execute("PRAGMA table_info(images)")
+    columns = [col[1] for col in c.fetchall()]
+    
+    if 'generated_image_filename' not in columns:
+        c.execute("ALTER TABLE images ADD COLUMN generated_image_filename TEXT")
+        print("Added generated_image_filename column to existing database")
+    
     conn.commit()
     conn.close()
 
@@ -195,6 +206,14 @@ def generated_file(filename):
     if not os.path.exists(file_path):
         return jsonify({'error': 'Generated file not found'}), 404
     return send_from_directory(app.config['GENERATED_FOLDER'], filename)
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    print(f"Serving uploaded file: {file_path}, exists: {os.path.exists(file_path)}")
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'Uploaded file not found'}), 404
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'}
