@@ -27,6 +27,8 @@ database.db
 # Uploads (generated files)
 uploads/
 !uploads/.gitkeep
+generated/
+!generated/.gitkeep
 
 # Virtual environments
 .env
