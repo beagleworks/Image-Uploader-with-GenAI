@@ -1,23 +1,27 @@
 from flask import Flask, request, jsonify, render_template, send_from_directory
 import os
 import sqlite3
-import google.generativeai as genai
+import google.genai as genai
+from PIL import Image
+from io import BytesIO
 import base64
 from werkzeug.utils import secure_filename
+import uuid
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
+app.config['GENERATED_FOLDER'] = os.path.join(os.getcwd(), 'generated')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 # Google AI API key (set as environment variable)
-genai.configure(api_key=os.getenv('GOOGLE_AI_API_KEY'))
+client = genai.Client(api_key=os.getenv('GOOGLE_AI_API_KEY'))
 
 # Database setup
 def init_db():
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS images
-                 (id INTEGER PRIMARY KEY, filename TEXT, comment TEXT, gemini_analysis TEXT)''')
+                 (id INTEGER PRIMARY KEY, filename TEXT, comment TEXT, generated_image_filename TEXT)''')
     conn.commit()
     conn.close()
 
@@ -69,35 +73,44 @@ def generate():
     with open(file_path, 'rb') as f:
         image_data = f.read()
     
-    # Create prompt for Gemini
-    prompt = f"Based on this image and comment: '{comment}', describe what a creative AI-generated image should look like. Provide a detailed prompt for image generation."
+    # Create prompt for Gemini 2.5 Flash Image
+    prompt = f"Based on this image and comment: '{comment}', create a creative AI-generated image that captures the essence and enhances the visual appeal."
     
     try:
-        # Use Gemini 1.5 Pro for image analysis
-        model = genai.GenerativeModel('gemini-1.5-pro')
+        # Use Gemini 2.5 Flash Image for image generation
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-image-preview",
+            contents=[prompt, Image.open(file_path)],
+        )
         
-        # Create image part for Gemini
-        image_part = {
-            "mime_type": "image/jpeg",
-            "data": base64.b64encode(image_data).decode('utf-8')
-        }
+        # Extract generated image
+        generated_image_data = None
+        for part in response.candidates[0].content.parts:
+            if part.inline_data is not None:
+                generated_image_data = part.inline_data.data
+                break
         
-        response = model.generate_content([prompt, image_part])
-        analysis_result = response.text
+        if generated_image_data is None:
+            return jsonify({'error': 'No image generated'}), 500
         
-        # For now, return the analysis result as text
-        # In a full implementation, you would use this analysis to generate an actual image
+        # Save generated image
+        generated_filename = f"generated_{uuid.uuid4().hex}.png"
+        generated_path = os.path.join(app.config['GENERATED_FOLDER'], generated_filename)
+        os.makedirs(app.config['GENERATED_FOLDER'], exist_ok=True)
         
-        # Update database with analysis result
+        generated_image = Image.open(BytesIO(generated_image_data))
+        generated_image.save(generated_path)
+        
+        # Update database with generated image filename
         conn = sqlite3.connect('database.db')
         c = conn.cursor()
-        c.execute("UPDATE images SET gemini_analysis = ? WHERE filename = ?", (analysis_result, filename))
+        c.execute("UPDATE images SET generated_image_filename = ? WHERE filename = ?", (generated_filename, filename))
         conn.commit()
         conn.close()
         
         return jsonify({
-            'analysis': analysis_result,
-            'message': 'Gemini Nano analysis completed.'
+            'generated_image': generated_filename,
+            'message': 'Gemini 2.5 Flash Image generation completed.'
         }), 200
         
     except Exception as e:
@@ -107,16 +120,21 @@ def generate():
 def get_images():
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
-    c.execute("SELECT filename, comment, gemini_analysis FROM images")
+    c.execute("SELECT filename, comment, generated_image_filename FROM images")
     images = c.fetchall()
     conn.close()
-    return jsonify([{'filename': img[0], 'comment': img[1], 'ai_generated_image': img[2]} for img in images])
+    return jsonify([{'filename': img[0], 'comment': img[1], 'generated_image': img[2]} for img in images])
 
 @app.route('/delete/<filename>', methods=['DELETE'])
 def delete_image(filename):
-    # Delete from database
+    # Get generated image filename before deleting from database
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
+    c.execute("SELECT generated_image_filename FROM images WHERE filename = ?", (filename,))
+    result = c.fetchone()
+    generated_filename = result[0] if result else None
+    
+    # Delete from database
     c.execute("DELETE FROM images WHERE filename = ?", (filename,))
     conn.commit()
     conn.close()
@@ -125,6 +143,12 @@ def delete_image(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if os.path.exists(file_path):
         os.remove(file_path)
+    
+    # Delete generated image from filesystem
+    if generated_filename:
+        generated_path = os.path.join(app.config['GENERATED_FOLDER'], generated_filename)
+        if os.path.exists(generated_path):
+            os.remove(generated_path)
     
     return jsonify({'message': 'Image deleted successfully'}), 200
 
@@ -146,6 +170,13 @@ def reset_database():
                 if os.path.isfile(file_path):
                     os.remove(file_path)
         
+        # Remove all generated files
+        if os.path.exists(app.config['GENERATED_FOLDER']):
+            for filename in os.listdir(app.config['GENERATED_FOLDER']):
+                file_path = os.path.join(app.config['GENERATED_FOLDER'], filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+        
         # Recreate database and table
         init_db()
         
@@ -153,13 +184,13 @@ def reset_database():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    print(f"Serving file: {file_path}, exists: {os.path.exists(file_path)}")
+@app.route('/generated/<filename>')
+def generated_file(filename):
+    file_path = os.path.join(app.config['GENERATED_FOLDER'], filename)
+    print(f"Serving generated file: {file_path}, exists: {os.path.exists(file_path)}")
     if not os.path.exists(file_path):
-        return jsonify({'error': 'File not found'}), 404
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+        return jsonify({'error': 'Generated file not found'}), 404
+    return send_from_directory(app.config['GENERATED_FOLDER'], filename)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'}

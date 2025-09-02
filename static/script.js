@@ -51,7 +51,7 @@ function loadImages() {
         const imageList = document.getElementById('imageList');
         imageList.innerHTML = '';
         images.forEach(img => {
-            console.log('Loading image:', img.filename, 'AI image:', img.ai_generated_image);
+            console.log('Loading image:', img.filename, 'Generated image:', img.generated_image);
             const item = document.createElement('div');
             item.className = 'image-item';
             item.innerHTML = `
@@ -62,9 +62,9 @@ function loadImages() {
                         <button class="generate-btn" onclick="generateResponse('${img.filename}', '${img.comment}')">🤖 AI</button>
                         <button class="delete-btn" onclick="deleteImage('${img.filename}')">削除</button>
                     </div>
-                    ${img.ai_generated_image ? `<div class="ai-generated-section">
-                        <h4>🤖 Gemini Nano分析結果</h4>
-                        <div class="analysis-result">${img.ai_generated_image}</div>
+                    ${img.generated_image ? `<div class="ai-generated-section">
+                        <h4>🎨 Gemini 2.5 Flash Image生成結果</h4>
+                        <img src="/generated/${encodeURIComponent(img.generated_image)}" alt="Generated image" class="generated-image" onerror="handleImageError(this)">
                     </div>` : ''}
                 </div>
             `;
@@ -87,15 +87,15 @@ function generateResponse(filename, comment) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.analysis) {
-            showMessage('🤖 Gemini Nano分析が完了しました！', 'success');
-            loadImages(); // Reload to show the analysis
+        if (data.generated_image) {
+            showMessage('🎨 Gemini 2.5 Flash Image生成が完了しました！', 'success');
+            loadImages(); // Reload to show the generated image
         } else {
             showMessage(data.error, 'error');
         }
     })
     .catch(error => {
-        showMessage('🤖 Gemini Nano分析に失敗しました', 'error');
+        showMessage('🎨 Gemini 2.5 Flash Image生成に失敗しました', 'error');
     });
 }
 
