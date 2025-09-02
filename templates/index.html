@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像アップローダー</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📸 画像アップローダー</h1>
+            <p>画像をアップロードして、AIと一緒に楽しもう！</p>
+            <div class="header-actions">
+                <button id="resetBtn" class="reset-btn">🔄 DBリセット</button>
+            </div>
+        </header>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="imageInput">画像を選択</label>
+                <input type="file" id="imageInput" accept="image/*" required>
+            </div>
+            <div class="form-group">
+                <label for="commentInput">コメント</label>
+                <textarea id="commentInput" placeholder="画像についてコメントを入力してください..."></textarea>
+            </div>
+            <button type="submit" class="upload-btn">🚀 アップロード</button>
+        </form>
+        <div id="message"></div>
+        <div id="imageList"></div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
