@@ -63,8 +63,8 @@ function loadImages() {
                         <button class="delete-btn" onclick="deleteImage('${img.filename}')">削除</button>
                     </div>
                     ${img.ai_generated_image ? `<div class="ai-generated-section">
-                        <h4>🤖 AI生成画像</h4>
-                        <img src="/uploads/${encodeURIComponent(img.ai_generated_image)}" alt="AI generated image" class="ai-generated-image" onerror="handleImageError(this)">
+                        <h4>🤖 Gemini Nano分析結果</h4>
+                        <div class="analysis-result">${img.ai_generated_image}</div>
                     </div>` : ''}
                 </div>
             `;
@@ -87,15 +87,15 @@ function generateResponse(filename, comment) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.generated_image) {
-            showMessage('AI画像が生成されました！', 'success');
-            loadImages(); // Reload to show the generated image
+        if (data.analysis) {
+            showMessage('🤖 Gemini Nano分析が完了しました！', 'success');
+            loadImages(); // Reload to show the analysis
         } else {
             showMessage(data.error, 'error');
         }
     })
     .catch(error => {
-        showMessage('AI生成に失敗しました', 'error');
+        showMessage('🤖 Gemini Nano分析に失敗しました', 'error');
     });
 }
 

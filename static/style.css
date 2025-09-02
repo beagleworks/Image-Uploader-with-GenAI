@@ -316,17 +316,15 @@ textarea {
     font-weight: 600;
 }
 
-.ai-generated-image {
-    width: 100%;
-    max-width: 300px;
-    height: auto;
+.analysis-result {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    padding: 1rem;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-}
-
-.ai-generated-image:hover {
-    transform: scale(1.05);
+    border: 1px solid #f59e0b;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #92400e;
+    white-space: pre-wrap;
 }
 
 .image-error {

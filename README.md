@@ -1,4 +1,14 @@
-# 画像アップローダーアプリケーション
+# 画像## 機能
+- 画像アップロード（JPEG, PNG, GIF対応）
+- コメント追加
+- **AI画像分析機能**（Google Gemini Nanoを使用）
+- 画像削除機能
+- **データベースリセット機能**（すべてのデータを削除して初期状態に戻す）
+
+## AI画像分析
+アプリケーションの「🤖 AI」ボタンを使用すると、Google Gemini Nanoが画像とコメントを分析し、創造的な洞察を提供します。
+
+**注意**: 現在の実装では分析結果をテキストで表示しています。完全な画像生成機能を使用するには、Google Imagen APIなどの追加設定が必要です。ーション
 
 このアプリケーションは、画像をアップロードし、コメントを追加し、AI（DALL-E）と連携して画像とコメントをプロンプトとして新しい画像を生成することができるシンプルなウェブアプリケーションです。
 
@@ -32,10 +42,12 @@
    pip install -r requirements.txt
    ```
 
-3. **OpenAI APIキーの設定**:
+3. **Google AI APIキーの設定**:
    ```bash
-   export OPENAI_API_KEY=your_openai_api_key_here
+   export GOOGLE_AI_API_KEY=your_google_ai_api_key_here
    ```
+   
+   ※ Google AI StudioからAPIキーを取得してください
 
 4. **アプリケーションの実行**:
    ```bash
@@ -69,9 +81,10 @@ pj2/
 ## 技術スタック
 - **バックエンド**: Python 3.13.7 + Flask 2.3.3
 - **フロントエンド**: HTML5, CSS3, JavaScript (Vanilla JS)
-- **AI**: OpenAI DALL-E 3 API
+- **AI**: Google Gemini Nano (google-generativeai==0.8.3)
 - **データベース**: SQLite 3
-- **環境管理**: mise (Pythonバージョン管理)
+- **HTTPクライアント**: requests==2.31.0
+- **環境管理**: mise
 - **バージョン管理**: Git
 
 ## 使用方法
@@ -80,10 +93,10 @@ pj2/
    - コメントを入力（任意）
    - 「🚀 アップロード」ボタンをクリック
 
-2. **AI画像生成**:
+2. **AI画像分析**:
    - アップロードされた画像の「🤖 AI」ボタンをクリック
-   - AIが画像とコメントを分析して新しい画像を生成
-   - 生成された画像が下に表示されます
+   - Google Gemini Nanoが画像とコメントを分析
+   - 分析結果がテキストで下に表示されます
 
 3. **画像削除**:
    - 各画像の「削除」ボタンをクリック

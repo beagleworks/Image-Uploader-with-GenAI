@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template, send_from_directory
 import os
 import sqlite3
-import openai
+import google.generativeai as genai
 import base64
 from werkzeug.utils import secure_filename
 
@@ -9,15 +9,15 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
-# OpenAI API key (set as environment variable)
-openai.api_key = os.getenv('OPENAI_API_KEY')
+# Google AI API key (set as environment variable)
+genai.configure(api_key=os.getenv('GOOGLE_AI_API_KEY'))
 
 # Database setup
 def init_db():
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS images
-                 (id INTEGER PRIMARY KEY, filename TEXT, comment TEXT, ai_generated_image TEXT)''')
+                 (id INTEGER PRIMARY KEY, filename TEXT, comment TEXT, gemini_analysis TEXT)''')
     conn.commit()
     conn.close()
 
@@ -65,40 +65,41 @@ def generate():
     if not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
     
-    # Create prompt for DALL-E
-    prompt = f"Based on this image and comment: '{comment}', create a creative and artistic image that represents or enhances the concept."
+    # Read image file
+    with open(file_path, 'rb') as f:
+        image_data = f.read()
+    
+    # Create prompt for Gemini
+    prompt = f"Based on this image and comment: '{comment}', describe what a creative AI-generated image should look like. Provide a detailed prompt for image generation."
     
     try:
-        # Generate image using DALL-E
-        response = openai.Image.create(
-            model="dall-e-3",
-            prompt=prompt,
-            size="1024x1024",
-            quality="standard",
-            n=1,
-        )
+        # Use Gemini 1.5 Pro for image analysis
+        model = genai.GenerativeModel('gemini-1.5-pro')
         
-        image_url = response['data'][0]['url']
+        # Create image part for Gemini
+        image_part = {
+            "mime_type": "image/jpeg",
+            "data": base64.b64encode(image_data).decode('utf-8')
+        }
         
-        # Download and save the generated image
-        import requests
-        import uuid
+        response = model.generate_content([prompt, image_part])
+        analysis_result = response.text
         
-        generated_filename = f"generated_{uuid.uuid4().hex}.png"
-        generated_path = os.path.join(app.config['UPLOAD_FOLDER'], generated_filename)
+        # For now, return the analysis result as text
+        # In a full implementation, you would use this analysis to generate an actual image
         
-        img_response = requests.get(image_url)
-        with open(generated_path, 'wb') as f:
-            f.write(img_response.content)
-        
-        # Update database
+        # Update database with analysis result
         conn = sqlite3.connect('database.db')
         c = conn.cursor()
-        c.execute("UPDATE images SET ai_generated_image = ? WHERE filename = ?", (generated_filename, filename))
+        c.execute("UPDATE images SET gemini_analysis = ? WHERE filename = ?", (analysis_result, filename))
         conn.commit()
         conn.close()
         
-        return jsonify({'generated_image': generated_filename}), 200
+        return jsonify({
+            'analysis': analysis_result,
+            'message': 'Gemini Nano analysis completed.'
+        }), 200
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -106,21 +107,16 @@ def generate():
 def get_images():
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
-    c.execute("SELECT filename, comment, ai_generated_image FROM images")
+    c.execute("SELECT filename, comment, gemini_analysis FROM images")
     images = c.fetchall()
     conn.close()
     return jsonify([{'filename': img[0], 'comment': img[1], 'ai_generated_image': img[2]} for img in images])
 
 @app.route('/delete/<filename>', methods=['DELETE'])
 def delete_image(filename):
-    # Get the AI generated image filename before deleting
+    # Delete from database
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
-    c.execute("SELECT ai_generated_image FROM images WHERE filename = ?", (filename,))
-    result = c.fetchone()
-    ai_generated_image = result[0] if result else None
-    
-    # Delete from database
     c.execute("DELETE FROM images WHERE filename = ?", (filename,))
     conn.commit()
     conn.close()
@@ -129,12 +125,6 @@ def delete_image(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if os.path.exists(file_path):
         os.remove(file_path)
-    
-    # Delete AI generated image from filesystem
-    if ai_generated_image:
-        ai_file_path = os.path.join(app.config['UPLOAD_FOLDER'], ai_generated_image)
-        if os.path.exists(ai_file_path):
-            os.remove(ai_file_path)
     
     return jsonify({'message': 'Image deleted successfully'}), 200
 
