@@ -39,10 +39,12 @@
 
 3. **Google AI APIキーの設定**:
    ```bash
-   export GOOGLE_AI_API_KEY=your_google_ai_api_key_here
+   # .envファイルを編集してAPIキーを設定
+   # Google AI StudioからAPIキーを取得: https://ai.google.dev/gemini-api/docs/api-key
+   echo "GOOGLE_AI_API_KEY=your_actual_api_key_here" > .env
    ```
    
-   ※ Google AI StudioからAPIキーを取得してください
+   または、直接`.env`ファイルを編集してください。
 
 4. **アプリケーションの実行**:
    ```bash
@@ -58,6 +60,7 @@
 pj2/
 ├── app.py                 # Flaskバックエンドアプリケーション
 ├── requirements.txt       # Python依存関係
+├── .env                  # 環境変数ファイル（APIキーなど）
 ├── database.db           # SQLiteデータベース（実行時に生成）
 ├── README.md             # このファイル
 ├── specs/
@@ -67,7 +70,8 @@ pj2/
 │   └── script.js        # JavaScriptファイル
 ├── templates/
 │   └── index.html       # HTMLテンプレート
-└── uploads/             # アップロード画像保存ディレクトリ
+├── uploads/             # アップロード画像保存ディレクトリ
+└── generated/           # AI生成画像保存ディレクトリ
 ```
 
 ## 仕様書
@@ -80,7 +84,7 @@ pj2/
 - **データベース**: SQLite 3
 - **画像処理**: Pillow 10.4.0
 - **HTTPクライアント**: requests==2.31.0
-- **環境管理**: mise
+- **環境管理**: mise + python-dotenv
 - **バージョン管理**: Git
 
 ## 使用方法

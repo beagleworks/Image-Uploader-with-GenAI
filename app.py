@@ -7,13 +7,17 @@ from io import BytesIO
 import base64
 from werkzeug.utils import secure_filename
 import uuid
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
 app.config['GENERATED_FOLDER'] = os.path.join(os.getcwd(), 'generated')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
-# Google AI API key (set as environment variable)
+# Load environment variables from .env file
+load_dotenv()
+
+# Google AI API key (loaded from .env file)
 client = genai.Client(api_key=os.getenv('GOOGLE_AI_API_KEY'))
 
 # Database setup
