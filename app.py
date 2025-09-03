@@ -84,9 +84,29 @@ def generate():
     if not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
     
-    # Create prompt for Gemini 2.5 Flash Image (Nano Banana)
-    prompt = f"Based on this image and comment: '{comment}'"
+    # Get current comment from database to ensure we use the latest
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute("SELECT comment, generated_image_filename FROM images WHERE filename = ?", (filename,))
+    result = c.fetchone()
+    if not result:
+        conn.close()
+        return jsonify({'error': 'Image not found in database'}), 404
+    
+    current_comment = result[0]
+    existing_generated_filename = result[1]
+    conn.close()
+    
+    # Use the current comment from database instead of the one passed from frontend
+    prompt = f"Based on this image and comment: '{current_comment}'"
+    
     try:
+        # Delete existing generated image if it exists
+        if existing_generated_filename:
+            existing_path = os.path.join(app.config['GENERATED_FOLDER'], existing_generated_filename)
+            if os.path.exists(existing_path):
+                os.remove(existing_path)
+        
         # Encode image to base64
         image_base64 = encode_image(file_path)
         
@@ -99,10 +119,6 @@ def generate():
         qjson = {
             "model": "google/gemini-2.5-flash-image-preview:free",
             "messages": [
-                # {
-                #     "role": "system",
-                #     "content": system_prompt
-                # },
                 {
                     "role": "user",
                     "content": [
@@ -119,7 +135,6 @@ def generate():
                     ]
                 }
             ],
-            # "temperature": temperature,
             "modalities": ["image", "text"]
         }
 
@@ -141,16 +156,11 @@ def generate():
         
         content = response_data['choices'][0]['message']['images'][0]['image_url']['url']
         
-        # Assuming the model returns an image description or base64 image
-        # For now, since Gemini may not generate images, we'll handle text response
-        # If it's base64, decode it; otherwise, treat as text
-        
         if content.startswith('data:image'):
             # Extract base64 data
             header, encoded = content.split(',', 1)
             generated_image_data = base64.b64decode(encoded)
         else:
-            # If no image, return error or handle differently
             return jsonify({'error': 'Model did not generate an image'}), 500
         
         # Save generated image

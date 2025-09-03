@@ -402,49 +402,75 @@ textarea {
     border: 1px solid #f87171;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .container {
-        margin: 1rem;
-        padding: 1.5rem;
-    }
-
-    h1 {
-        font-size: 2rem;
-    }
-
-    .image-item {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .image-item img {
-        width: 100%;
-        max-width: 200px;
-        height: auto;
-    }
-
-    .button-group {
-        justify-content: center;
-    }
-
-    form {
-        padding: 1.5rem;
-    }
+/* Image Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.9);
+    animation: fadeIn 0.3s ease-out;
 }
 
-@media (max-width: 480px) {
-    .container {
-        margin: 0.5rem;
-        padding: 1rem;
-    }
+.modal-content {
+    margin: auto;
+    display: block;
+    max-width: 90%;
+    max-height: 90%;
+    animation: zoomIn 0.3s ease-out;
+}
 
-    h1 {
-        font-size: 1.8rem;
-    }
+@keyframes zoomIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
 
-    .upload-btn {
-        padding: 0.875rem 1.5rem;
-        font-size: 1rem;
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: #bbb;
+}
+
+#modalCaption {
+    margin: 20px auto;
+    display: block;
+    width: 80%;
+    max-width: 700px;
+    text-align: center;
+    color: #ccc;
+    padding: 10px 0;
+    font-size: 18px;
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+    .modal-content {
+        max-width: 95%;
+        max-height: 80%;
+    }
+    
+    .close-modal {
+        top: 10px;
+        right: 20px;
+        font-size: 30px;
+    }
+    
+    #modalCaption {
+        width: 90%;
+        font-size: 16px;
     }
 }

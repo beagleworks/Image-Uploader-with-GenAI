@@ -9,6 +9,31 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('resetBtn').addEventListener('click', function() {
         resetDatabase();
     });
+    
+    // Modal functionality
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const modalCaption = document.getElementById('modalCaption');
+    const closeBtn = document.getElementsByClassName('close-modal')[0];
+    
+    // Close modal when clicking the close button
+    closeBtn.onclick = function() {
+        modal.style.display = 'none';
+    }
+    
+    // Close modal when clicking outside the image
+    modal.onclick = function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    }
+    
+    // Close modal when pressing Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && modal.style.display === 'block') {
+            modal.style.display = 'none';
+        }
+    });
 });
 
 function uploadImage() {
@@ -55,7 +80,7 @@ function loadImages() {
             const item = document.createElement('div');
             item.className = 'image-item';
             item.innerHTML = `
-                <img src="/uploads/${encodeURIComponent(img.filename)}" alt="Uploaded image" onerror="handleImageError(this)">
+                <img src="/uploads/${encodeURIComponent(img.filename)}" alt="Uploaded image" onclick="openModal('/uploads/${encodeURIComponent(img.filename)}', 'アップロード画像')" onerror="handleImageError(this)">
                 <div class="image-info">
                     <p><strong>コメント:</strong> <span id="comment-${img.filename}">${img.comment}</span></p>
                     <div class="button-group">
@@ -65,7 +90,7 @@ function loadImages() {
                     </div>
                     ${img.generated_image ? `<div class="ai-generated-section">
                         <h4>🎨 Gemini 2.5 Flash Image (Nano Banana)生成結果</h4>
-                        <img src="/generated/${encodeURIComponent(img.generated_image)}" alt="Generated image" class="generated-image" onerror="handleImageError(this)">
+                        <img src="/generated/${encodeURIComponent(img.generated_image)}" alt="Generated image" class="generated-image" onclick="openModal('/generated/${encodeURIComponent(img.generated_image)}', 'AI生成画像')" onerror="handleImageError(this)">
                     </div>` : ''}
                 </div>
             `;
@@ -79,12 +104,13 @@ function loadImages() {
 }
 
 function generateResponse(filename, comment) {
+    // Don't pass comment from frontend, let backend get the latest from database
     fetch('/generate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ filename: filename, comment: comment })
+        body: JSON.stringify({ filename: filename })
     })
     .then(response => response.json())
     .then(data => {
@@ -100,13 +126,14 @@ function generateResponse(filename, comment) {
     });
 }
 
-function handleImageError(img) {
-    console.error('Image failed to load:', img.src);
-    img.style.display = 'none';
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'image-error';
-    errorDiv.innerHTML = '📷 画像の読み込みに失敗しました';
-    img.parentNode.insertBefore(errorDiv, img);
+function openModal(imageSrc, caption) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const modalCaption = document.getElementById('modalCaption');
+    
+    modal.style.display = 'block';
+    modalImg.src = imageSrc;
+    modalCaption.innerHTML = caption;
 }
 
 function resetDatabase() {
