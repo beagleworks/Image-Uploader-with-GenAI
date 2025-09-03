@@ -57,13 +57,14 @@ function loadImages() {
             item.innerHTML = `
                 <img src="/uploads/${encodeURIComponent(img.filename)}" alt="Uploaded image" onerror="handleImageError(this)">
                 <div class="image-info">
-                    <p><strong>コメント:</strong> ${img.comment}</p>
+                    <p><strong>コメント:</strong> <span id="comment-${img.filename}">${img.comment}</span></p>
                     <div class="button-group">
+                        <button class="edit-btn" onclick="editComment('${img.filename}')">✏️ 編集</button>
                         <button class="generate-btn" onclick="generateResponse('${img.filename}', '${img.comment}')">🤖 AI</button>
                         <button class="delete-btn" onclick="deleteImage('${img.filename}')">削除</button>
                     </div>
                     ${img.generated_image ? `<div class="ai-generated-section">
-                        <h4>🎨 Gemini 2.5 Flash Image生成結果</h4>
+                        <h4>🎨 Gemini 2.5 Flash Image (Nano Banana)生成結果</h4>
                         <img src="/generated/${encodeURIComponent(img.generated_image)}" alt="Generated image" class="generated-image" onerror="handleImageError(this)">
                     </div>` : ''}
                 </div>
@@ -88,14 +89,14 @@ function generateResponse(filename, comment) {
     .then(response => response.json())
     .then(data => {
         if (data.generated_image) {
-            showMessage('🎨 Gemini 2.5 Flash Image生成が完了しました！', 'success');
+            showMessage('🎨 Gemini 2.5 Flash Image (Nano Banana) 生成が完了しました！', 'success');
             loadImages(); // Reload to show the generated image
         } else {
             showMessage(data.error, 'error');
         }
     })
     .catch(error => {
-        showMessage('🎨 Gemini 2.5 Flash Image生成に失敗しました', 'error');
+        showMessage('🎨 Gemini 2.5 Flash Image (Nano Banana)生成に失敗しました', 'error');
     });
 }
 
@@ -158,4 +159,62 @@ function deleteImage(filename) {
             showMessage('削除に失敗しました', 'error');
         });
     }
+}
+
+function editComment(filename) {
+    const commentSpan = document.getElementById(`comment-${filename}`);
+    const currentComment = commentSpan.textContent;
+    
+    // Create input field
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentComment;
+    input.className = 'edit-input';
+    
+    // Create save button
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = '保存';
+    saveBtn.className = 'save-btn';
+    saveBtn.onclick = function() {
+        const newComment = input.value.trim();
+        if (newComment && newComment !== currentComment) {
+            fetch(`/edit_comment/${filename}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ comment: newComment })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    commentSpan.textContent = newComment;
+                    showMessage('コメントが更新されました', 'success');
+                } else {
+                    showMessage(data.error, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('コメントの更新に失敗しました', 'error');
+            });
+        }
+        // Restore original display
+        commentSpan.textContent = currentComment;
+    };
+    
+    // Create cancel button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'キャンセル';
+    cancelBtn.className = 'cancel-btn';
+    cancelBtn.onclick = function() {
+        commentSpan.textContent = currentComment;
+    };
+    
+    // Replace comment with input and buttons
+    commentSpan.innerHTML = '';
+    commentSpan.appendChild(input);
+    commentSpan.appendChild(saveBtn);
+    commentSpan.appendChild(cancelBtn);
+    
+    input.focus();
 }

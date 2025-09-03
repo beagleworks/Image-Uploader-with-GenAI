@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template, send_from_directory
 import os
 import sqlite3
-import google.genai as genai
+import requests
 from PIL import Image
 from io import BytesIO
 import base64
@@ -17,8 +17,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 # Load environment variables from .env file
 load_dotenv()
 
-# Google AI API key (loaded from .env file)
-client = genai.Client(api_key=os.getenv('GOOGLE_AI_API_KEY'))
+# OpenRouter API key (loaded from .env file)
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 
 # Database setup
 def init_db():
@@ -84,29 +84,74 @@ def generate():
     if not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
     
-    # Read image file
-    with open(file_path, 'rb') as f:
-        image_data = f.read()
-    
-    # Create prompt for Gemini 2.5 Flash Image
-    prompt = f"Based on this image and comment: '{comment}', create a creative AI-generated image that captures the essence and enhances the visual appeal."
-    
+    # Create prompt for Gemini 2.5 Flash Image (Nano Banana)
+    prompt = f"Based on this image and comment: '{comment}'"
     try:
-        # Use Gemini 2.5 Flash Image for image generation
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-image-preview",
-            contents=[prompt, Image.open(file_path)],
+        # Encode image to base64
+        image_base64 = encode_image(file_path)
+        
+        # Use OpenRouter API for Gemini 2.5 Flash Image (Nano Banana)
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        qjson = {
+            "model": "google/gemini-2.5-flash-image-preview:free",
+            "messages": [
+                # {
+                #     "role": "system",
+                #     "content": system_prompt
+                # },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text", 
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            # "temperature": temperature,
+            "modalities": ["image", "text"]
+        }
+
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers = headers,
+            json = qjson
         )
         
-        # Extract generated image
-        generated_image_data = None
-        for part in response.candidates[0].content.parts:
-            if part.inline_data is not None:
-                generated_image_data = part.inline_data.data
-                break
+
+        if response.status_code != 200:
+            return jsonify({'error': f'OpenRouter API error: {response.text}'}), 500
         
-        if generated_image_data is None:
-            return jsonify({'error': 'No image generated'}), 500
+        response_data = response.json()
+
+        # Extract generated content
+        if 'choices' not in response_data or not response_data['choices']:
+            return jsonify({'error': 'No response from model'}), 500
+        
+        content = response_data['choices'][0]['message']['images'][0]['image_url']['url']
+        
+        # Assuming the model returns an image description or base64 image
+        # For now, since Gemini may not generate images, we'll handle text response
+        # If it's base64, decode it; otherwise, treat as text
+        
+        if content.startswith('data:image'):
+            # Extract base64 data
+            header, encoded = content.split(',', 1)
+            generated_image_data = base64.b64decode(encoded)
+        else:
+            # If no image, return error or handle differently
+            return jsonify({'error': 'Model did not generate an image'}), 500
         
         # Save generated image
         generated_filename = f"generated_{uuid.uuid4().hex}.png"
@@ -125,7 +170,7 @@ def generate():
         
         return jsonify({
             'generated_image': generated_filename,
-            'message': 'Gemini 2.5 Flash Image generation completed.'
+            'message': 'OpenRouter Gemini 2.5 Flash Image (Nano Banana) generation completed.'
         }), 200
         
     except Exception as e:
@@ -139,6 +184,22 @@ def get_images():
     images = c.fetchall()
     conn.close()
     return jsonify([{'filename': img[0], 'comment': img[1], 'generated_image': img[2]} for img in images])
+
+@app.route('/edit_comment/<filename>', methods=['PUT'])
+def edit_comment(filename):
+    data = request.json
+    new_comment = data.get('comment', '')
+    
+    if not new_comment:
+        return jsonify({'error': 'Comment is required'}), 400
+    
+    conn = sqlite3.connect('database.db')
+    c = conn.cursor()
+    c.execute("UPDATE images SET comment = ? WHERE filename = ?", (new_comment, filename))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'message': 'Comment updated successfully'}), 200
 
 @app.route('/delete/<filename>', methods=['DELETE'])
 def delete_image(filename):
@@ -217,6 +278,10 @@ def uploaded_file(filename):
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'}
+
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
 
 if __name__ == '__main__':
     app.run(debug=True)

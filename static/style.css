@@ -251,7 +251,7 @@ textarea {
     flex-wrap: wrap;
 }
 
-.generate-btn, .delete-btn {
+.generate-btn, .delete-btn, .edit-btn {
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 8px;
@@ -284,6 +284,68 @@ textarea {
     background: linear-gradient(135deg, #dc2626, #b91c1c);
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.edit-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.edit-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.save-btn, .cancel-btn {
+    padding: 0.5rem 1rem;
+    margin-left: 0.5rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-family: inherit;
+}
+
+.save-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.save-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+}
+
+.cancel-btn {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+}
+
+.cancel-btn:hover {
+    background: linear-gradient(135deg, #4b5563, #374151);
+    transform: translateY(-1px);
+}
+
+.edit-input {
+    padding: 0.5rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    margin-right: 0.5rem;
+    width: 60%;
+    transition: all 0.3s ease;
+}
+
+.edit-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
 .llm-response {

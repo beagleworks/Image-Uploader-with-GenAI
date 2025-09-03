@@ -5,14 +5,15 @@
 ## 機能
 - 画像アップロード（JPEG, PNG, GIF対応）
 - コメント追加
-- **AI画像生成機能**（Google Gemini 2.5 Flash Imageを使用）
+- **コメント編集機能**（アップロード後のコメントを編集可能）
+- **AI画像生成機能**（OpenRouterを介してGoogle Gemini 2.5 Flash Image (Nano Banana)を使用）
 - 画像削除機能
 - **データベースリセット機能**（すべてのデータを削除して初期状態に戻す）
 
 ## AI画像生成
-アプリケーションの「🤖 AI」ボタンを使用すると、Google Gemini 2.5 Flash Imageがアップロードされた画像とコメントを基に、創造的な新しい画像を生成します。
+アプリケーションの「🤖 AI」ボタンを使用すると、OpenRouterを介してGoogle Gemini 2.5 Flash Image (Nano Banana)がアップロードされた画像とコメントを基に、創造的な新しい画像を生成します。
 
-**注意**: この機能にはGoogle AI APIキーと料金がかかります。生成された画像はローカルの `generated/` フォルダに保存されます。
+**注意**: この機能にはOpenRouter APIキーと料金がかかります。生成された画像はローカルの `generated/` フォルダに保存されます。
 
 ## データベースリセット
 アプリケーションのヘッダーにある「🔄 DBリセット」ボタンを使用すると、すべての画像データとデータベースを初期状態に戻すことができます。
@@ -37,11 +38,11 @@
    pip install -r requirements.txt
    ```
 
-3. **Google AI APIキーの設定**:
+3. **OpenRouter APIキーの設定**:
    ```bash
    # .envファイルを編集してAPIキーを設定
-   # Google AI StudioからAPIキーを取得: https://ai.google.dev/gemini-api/docs/api-key
-   echo "GOOGLE_AI_API_KEY=your_actual_api_key_here" > .env
+   # OpenRouterからAPIキーを取得: https://openrouter.ai/keys
+   echo "OPENROUTER_API_KEY=your_actual_api_key_here" > .env
    ```
    
    または、直接`.env`ファイルを編集してください。
@@ -80,7 +81,7 @@ pj2/
 ## 技術スタック
 - **バックエンド**: Python 3.13.7 + Flask 2.3.3
 - **フロントエンド**: HTML5, CSS3, JavaScript (Vanilla JS)
-- **AI**: Google Gemini 2.5 Flash Image (google-genai)
+- **AI**: Google Gemini 2.5 Flash Image (Nano Banana) via OpenRouter
 - **データベース**: SQLite 3
 - **画像処理**: Pillow 10.4.0
 - **HTTPクライアント**: requests==2.31.0
@@ -93,10 +94,10 @@ pj2/
    - コメントを入力（任意）
    - 「🚀 アップロード」ボタンをクリック
 
-2. **AI画像生成**:
-   - アップロードされた画像の「🤖 AI」ボタンをクリック
-   - Google Gemini 2.5 Flash Imageが画像とコメントを基に新しい画像を生成
-   - 生成された画像が下に表示されます
+2. **コメント編集**:
+   - アップロードされた画像の「✏️ 編集」ボタンをクリック
+   - コメントを編集して「保存」ボタンをクリック
+   - 「キャンセル」ボタンで編集を中止
 
 3. **画像削除**:
    - 各画像の「削除」ボタンをクリック
@@ -107,7 +108,7 @@ pj2/
    - 二重確認ダイアログで「OK」を選択
 
 ## 注意事項
-- **Google AI API**: 使用にはAPIキーと料金がかかります
+- **OpenRouter API**: 使用にはAPIキーと料金がかかります
 - **画像保存**: アップロードされた画像はローカルの `uploads/` フォルダに保存されます
 - **生成画像**: AI生成された画像はローカルの `generated/` フォルダに保存されます
 - **データベース**: SQLiteファイルは `database.db` として保存されます
@@ -116,7 +117,7 @@ pj2/
 
 ## トラブルシューティング
 - **画像が表示されない**: ブラウザのキャッシュをクリアするか、URLエンコードの問題を確認
-- **APIエラー**: Google AI APIキーが正しく設定されているか確認
+- **APIエラー**: OpenRouter APIキーが正しく設定されているか確認
 - **生成エラー**: 画像ファイルが破損していないか、サポートされている形式か確認
 - **データベースエラー**: `database.db` ファイルの権限を確認、またはDBリセット機能を使用
 
